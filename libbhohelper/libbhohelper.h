@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 
 namespace LIB_BhoHelper
 {
@@ -11,6 +12,14 @@ namespace LIB_BhoHelper
   extern _ATL_FUNC_INFO info_WebBrowserEvents2_DocumentComplete;
   extern _ATL_FUNC_INFO info_WebBrowserEvents2_WindowSetHeight;
   extern _ATL_FUNC_INFO info_WebBrowserEvents2_WindowStateChanged;
+
+  ///////////////////////////////////////////////////////////
+  // Utility functions
+  HRESULT createIDispatchFromCreator(LPDISPATCH aCreator, VARIANT* aRet);
+
+  typedef std::vector<CComVariant> VariantVector;
+  HRESULT addJSArrayToVariantVector(LPDISPATCH aArrayDispatch, VariantVector &aVariantVector);
+  HRESULT constructSafeArrayFromVector(const VariantVector &aVariantVector, VARIANT &aSafeArray);
 
   ///////////////////////////////////////////////////////////
   // CIDispatchHelper

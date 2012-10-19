@@ -4,6 +4,94 @@
 
 namespace LIB_BhoHelper
 {
+  HRESULT createIDispatchFromCreator(LPDISPATCH aCreator, VARIANT* aRet)
+  {
+    if (!aRet) {
+      return E_POINTER;
+    }
+    CComQIPtr<IDispatchEx> creator(aCreator);
+    if (!creator) {
+      return E_NOINTERFACE;
+    }
+    DISPPARAMS params = {0};
+    HRESULT hr = creator->InvokeEx(DISPID_VALUE, LOCALE_USER_DEFAULT, DISPATCH_CONSTRUCT, &params, aRet, NULL, NULL);
+    if (hr != S_OK) {
+      return hr;
+    }
+    return S_OK;
+  }
+
+  //----------------------------------------------------------------------------
+  //
+  HRESULT addJSArrayToVariantVector(LPDISPATCH aArrayDispatch, VariantVector &aVariantVector)
+  {
+    CComQIPtr<IDispatchEx> dispexArray(aArrayDispatch);
+    if (!dispexArray) {
+        return E_NOINTERFACE;
+    }
+
+    // Get array length DISPID
+    DISPID dispidLength;
+    CComBSTR bstrLength(L"length");
+    HRESULT hr = dispexArray->GetDispID(bstrLength, fdexNameCaseSensitive, &dispidLength);
+    if (FAILED(hr)) {
+        return hr;
+    }
+
+    // Get length value using InvokeEx()
+    CComVariant varLength;
+    DISPPARAMS dispParamsNoArgs = {0};
+    hr = dispexArray->InvokeEx(dispidLength, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varLength, NULL, NULL);
+    if (FAILED(hr)) {
+        return hr;
+    }
+
+    ATLASSERT(varLength.vt == VT_I4);
+    const int count = varLength.intVal;
+    aVariantVector.reserve(aVariantVector.size() + count); //ensure that we will not reallocate too often
+
+    // For each element in source array:
+    for (int i = count-1; i >= 0; --i) //values are reverted
+    {
+        CString strIndex;
+        strIndex.Format(L"%d", i);
+
+        // Convert to BSTR, as GetDispID() wants BSTR's
+        CComBSTR bstrIndex(strIndex);
+        DISPID dispidIndex;
+        hr = dispexArray->GetDispID(bstrIndex, fdexNameCaseSensitive, &dispidIndex);
+        if (FAILED(hr)) {
+            break;
+        }
+
+        // Get array item value using InvokeEx()
+        CComVariant varItem;
+        hr = dispexArray->InvokeEx(dispidIndex, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varItem, NULL, NULL);
+        if (FAILED(hr)) {
+            break;
+        }
+        aVariantVector.push_back(varItem);
+    }
+    return S_OK;
+  }
+
+  //----------------------------------------------------------------------------
+  //
+  HRESULT constructSafeArrayFromVector(const VariantVector &aVariantVector, VARIANT &aSafeArray)
+  {
+    SAFEARRAYBOUND bounds [] = { static_cast<ULONG>(aVariantVector.size()), 0 };
+    aSafeArray.vt = VT_ARRAY | VT_VARIANT;
+    aSafeArray.parray = SafeArrayCreate(VT_VARIANT, 1, bounds);
+    VARIANT *elements;
+    SafeArrayAccessData(aSafeArray.parray, (void**)&elements);
+    for (size_t i = 0; i < aVariantVector.size(); ++i) {
+      elements[i] = aVariantVector[i];
+    }
+    SafeArrayUnaccessData(aSafeArray.parray);
+    return S_OK;
+  }
+
+
 
   ///////////////////////////////////////////////////////////
   // CIDispatchHelper
@@ -172,6 +260,5 @@ namespace LIB_BhoHelper
 
     return vtResult.pdispVal->QueryInterface(IID_IDispatch, (void**)ppDisp);
   }
-
 
 }// namespace LIB_BhoHelper
