@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 
+
 namespace LIB_BhoHelper
 {
 
@@ -20,6 +21,8 @@ namespace LIB_BhoHelper
   typedef std::vector<CComVariant> VariantVector;
   HRESULT addJSArrayToVariantVector(LPDISPATCH aArrayDispatch, VariantVector &aVariantVector);
   HRESULT constructSafeArrayFromVector(const VariantVector &aVariantVector, VARIANT &aSafeArray);
+
+  BOOL CALLBACK EnumBrowserWindows(HWND hwnd, LPARAM lParam);
 
   ///////////////////////////////////////////////////////////
   // CIDispatchHelper

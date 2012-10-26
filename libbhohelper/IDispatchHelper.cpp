@@ -1,6 +1,9 @@
 #include "StdAfx.h"
 #include "libbhohelper.h"
 
+#include <shlguid.h>
+#include <OleAcc.h> // For ObjectFromLresult
+#pragma comment(lib, "Oleacc.lib")
 
 namespace LIB_BhoHelper
 {
@@ -90,8 +93,58 @@ namespace LIB_BhoHelper
     SafeArrayUnaccessData(aSafeArray.parray);
     return S_OK;
   }
-
-
+  //----------------------------------------------------------------------------
+  //
+  BOOL CALLBACK EnumBrowserWindows(HWND hwnd, LPARAM lParam)
+  {
+    wchar_t className[MAX_PATH];
+    ::GetClassName(hwnd, className, MAX_PATH);
+    if (wcscmp(className, L"Internet Explorer_Server") == 0) {
+      // Now we need to get the IWebBrowser2 from the window.
+      DWORD dwMsg = ::RegisterWindowMessage(L"WM_HTML_GETOBJECT");
+      LRESULT lResult = 0;
+      ::SendMessageTimeout(hwnd, dwMsg, 0, 0, SMTO_ABORTIFHUNG, 1000, (DWORD*) &lResult);
+      if (lResult) {
+        CComPtr<IHTMLDocument2> doc;
+        HRESULT hr = ::ObjectFromLresult(lResult, IID_IHTMLDocument2, 0, (void**) &doc);
+        if (SUCCEEDED(hr)) {
+          CComPtr<IHTMLWindow2> win;
+          hr = doc->get_parentWindow(&win);
+          if (SUCCEEDED(hr)) {
+            CComQIPtr<IServiceProvider> sp(win);
+            CComPtr<IWebBrowser2> pWebBrowser;
+            if (sp) {
+              hr = sp->QueryService(IID_IWebBrowserApp, IID_IWebBrowser2, (void**) &pWebBrowser);
+              if (SUCCEEDED(hr)) {
+                CComPtr<IDispatch> container;
+                pWebBrowser->get_Container(&container);
+                // IWebBrowser2 doesn't have a container if it is an IE tab, so if we have a container
+                // then we must be an embedded web browser (e.g. in an HTML toolbar).
+                if (!container) {
+                  // Now get the HWND associated with the tab so we can see if it is active.
+                  sp = pWebBrowser;
+                  if (sp) {
+                    CComPtr<IOleWindow> oleWindow;
+                    hr = sp->QueryService(SID_SShellBrowser, IID_IOleWindow, (void**) &oleWindow);
+                    if (SUCCEEDED(hr)) {
+                      HWND hTab;
+                      hr = oleWindow->GetWindow(&hTab);
+                      if (SUCCEEDED(hr) && ::IsWindowEnabled(hTab)) {
+                        // Success, we found the active browser!
+                        pWebBrowser.CopyTo((IWebBrowser2 **) lParam);
+                        return FALSE;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return TRUE;
+  }
 
   ///////////////////////////////////////////////////////////
   // CIDispatchHelper
