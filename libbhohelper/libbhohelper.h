@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <map>
 
 
 namespace LIB_BhoHelper
@@ -18,7 +19,11 @@ namespace LIB_BhoHelper
   // Utility functions
   HRESULT createIDispatchFromCreator(LPDISPATCH aCreator, VARIANT* aRet);
 
+  typedef std::map<std::wstring, CComPtr<IDispatch>> DispatchMap;
+
   typedef std::vector<CComVariant> VariantVector;
+
+
   HRESULT addJSArrayToVariantVector(LPDISPATCH aArrayDispatch, VariantVector &aVariantVector);
   HRESULT constructSafeArrayFromVector(const VariantVector &aVariantVector, VARIANT &aSafeArray);
 
