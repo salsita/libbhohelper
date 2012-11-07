@@ -21,6 +21,11 @@ namespace LIB_BhoHelper
   HRESULT addJSArrayToVariantVector(LPDISPATCH aArrayDispatch, VariantVector &aVariantVector);
   HRESULT constructSafeArrayFromVector(const VariantVector &aVariantVector, VARIANT &aSafeArray);
 
+  HRESULT getHTMLDocumentForHWND(HWND hwnd, IHTMLDocument2** aRet);
+  HRESULT getBrowserForHTMLDocument(IHTMLDocument2* aDocument, IWebBrowser2** aRet);
+
+  HRESULT removeUrlFragment(BSTR aUrl, BSTR* aRet);
+
   ///////////////////////////////////////////////////////////
   // CIDispatchHelper
   // makes IDispatch handling easier

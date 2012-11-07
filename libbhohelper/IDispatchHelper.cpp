@@ -1,9 +1,45 @@
 #include "StdAfx.h"
 #include "libbhohelper.h"
 
+#include <OleAcc.h> // For ObjectFromLresult
+#pragma comment(lib, "Oleacc.lib")
 
 namespace LIB_BhoHelper
 {
+  HRESULT getHTMLDocumentForHWND(HWND hwnd, IHTMLDocument2** aRet)
+  {
+    DWORD dwMsg = ::RegisterWindowMessage(L"WM_HTML_GETOBJECT");
+    LRESULT lResult = 0;
+    ::SendMessageTimeout(hwnd, dwMsg, 0, 0, SMTO_ABORTIFHUNG, 1000, (DWORD*) &lResult);
+    if (lResult) {
+      return ::ObjectFromLresult(lResult, IID_IHTMLDocument2, 0, (void**) aRet);
+    }
+    else {
+      return E_FAIL;
+    }
+  }
+
+  //----------------------------------------------------------------------------
+  //
+  HRESULT getBrowserForHTMLDocument(IHTMLDocument2* aDocument, IWebBrowser2** aRet)
+  {
+    CComPtr<IHTMLWindow2> win;
+    HRESULT hr = aDocument->get_parentWindow(&win);
+    if (SUCCEEDED(hr)) {
+      CComQIPtr<IServiceProvider> sp(win);
+      CComPtr<IWebBrowser2> pWebBrowser;
+      if (sp) {
+        hr = sp->QueryService(IID_IWebBrowserApp, IID_IWebBrowser2, (void**) aRet);
+      }
+      else {
+        return E_NOINTERFACE;
+      }
+    }
+    return hr;
+  }
+
+  //----------------------------------------------------------------------------
+  //
   HRESULT createIDispatchFromCreator(LPDISPATCH aCreator, VARIANT* aRet)
   {
     if (!aRet) {
@@ -92,6 +128,17 @@ namespace LIB_BhoHelper
   }
 
 
+  //----------------------------------------------------------------------------
+  //
+  HRESULT removeUrlFragment(BSTR aUrl, BSTR* aRet) {
+    ATLASSERT(aRet);
+    *aRet = ::SysAllocString(aUrl);
+    wchar_t* fragment = wcschr(*aRet, L'#');
+    if (fragment) {
+      *fragment = L'\0';
+    }
+    return S_OK;
+  }
 
   ///////////////////////////////////////////////////////////
   // CIDispatchHelper
