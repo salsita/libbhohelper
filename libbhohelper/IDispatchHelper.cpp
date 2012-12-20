@@ -90,24 +90,24 @@ namespace LIB_BhoHelper
     // For each element in source array:
     for (int i = count-1; i >= 0; --i) //values are reverted
     {
-        CString strIndex;
-        strIndex.Format(L"%d", i);
+      CString strIndex;
+      strIndex.Format(L"%d", i);
 
-        // Convert to BSTR, as GetDispID() wants BSTR's
-        CComBSTR bstrIndex(strIndex);
-        DISPID dispidIndex;
-        hr = dispexArray->GetDispID(bstrIndex, fdexNameCaseSensitive, &dispidIndex);
-        if (FAILED(hr)) {
-            break;
-        }
+      // Convert to BSTR, as GetDispID() wants BSTR's
+      CComBSTR bstrIndex(strIndex);
+      DISPID dispidIndex;
+      hr = dispexArray->GetDispID(bstrIndex, fdexNameCaseSensitive, &dispidIndex);
 
-        // Get array item value using InvokeEx()
-        CComVariant varItem;
+      CComVariant varItem;
+      //if we cannot obtain item with given index - it means that its value is undefined
+      if (SUCCEEDED(hr)) {
+      // Get array item value using InvokeEx()
         hr = dispexArray->InvokeEx(dispidIndex, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varItem, NULL, NULL);
         if (FAILED(hr)) {
-            break;
+          return hr;
         }
-        aVariantVector.push_back(varItem);
+      }
+      aVariantVector.push_back(varItem);
     }
     return S_OK;
   }
