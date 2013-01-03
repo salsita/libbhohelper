@@ -122,7 +122,10 @@ namespace LIB_BhoHelper
     VARIANT *elements;
     SafeArrayAccessData(aSafeArray.parray, (void**)&elements);
     for (size_t i = 0; i < aVariantVector.size(); ++i) {
-      elements[i] = aVariantVector[i];
+      HRESULT hr = ::VariantCopy(&elements[i],&aVariantVector[i]);
+      if (FAILED(hr)) {
+        return hr;
+      }      
     }
     SafeArrayUnaccessData(aSafeArray.parray);
     return S_OK;
