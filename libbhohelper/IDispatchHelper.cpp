@@ -72,7 +72,6 @@ namespace LIB_BhoHelper
     // Get array length DISPID
     DISPID dispidLength;
     CComBSTR bstrLength(L"length");
-    //HRESULT hr = dispexArray->GetDispID(bstrLength, fdexNameCaseSensitive, &dispidLength);
     HRESULT hr = dispArray->GetIDsOfNames(IID_NULL, &bstrLength, 1, LOCALE_SYSTEM_DEFAULT, &dispidLength);
 
 
@@ -80,10 +79,9 @@ namespace LIB_BhoHelper
         return hr;
     }
 
-    // Get length value using InvokeEx()
+    // Get length value using Invoke()
     CComVariant varLength;
     DISPPARAMS dispParamsNoArgs = {0};
-    //hr = dispexArray->InvokeEx(dispidLength, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varLength, NULL, NULL);
     hr = dispArray->Invoke(dispidLength, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varLength, NULL, NULL);
     if (FAILED(hr)) {
         return hr;
@@ -96,7 +94,7 @@ namespace LIB_BhoHelper
 
 
     // For each element in source array:
-    for (int i = 0 ; i < count; ++i) //values are reverted
+    for (int i = 0 ; i < count; ++i)
     {
       CString strIndex;
       strIndex.Format(L"%d", i);
@@ -104,14 +102,12 @@ namespace LIB_BhoHelper
       // Convert to BSTR, as GetDispID() wants BSTR's
       CComBSTR bstrIndex(strIndex);
       DISPID dispidIndex;
-      //hr = dispexArray->GetDispID(bstrIndex, fdexNameCaseSensitive, &dispidIndex);
       hr = dispArray->GetIDsOfNames(IID_NULL, &bstrIndex, 1, LOCALE_SYSTEM_DEFAULT, &dispidIndex);
 
       CComVariant varItem;
       //if we cannot obtain item with given index - it means that its value is undefined
       if (SUCCEEDED(hr)) {
-      // Get array item value using InvokeEx()
-        //hr = dispexArray->InvokeEx(dispidIndex, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varItem, NULL, NULL);
+        // Get array item value using Invoke()
         hr = dispArray->Invoke(dispidIndex, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varItem, NULL, NULL);
         if (FAILED(hr)) {
           return hr;
