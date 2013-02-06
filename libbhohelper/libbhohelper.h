@@ -24,8 +24,9 @@ namespace LIB_BhoHelper
   typedef std::vector<CComVariant> VariantVector;
 
 
-  HRESULT addJSArrayToVariantVector(LPDISPATCH aArrayDispatch, VariantVector &aVariantVector);
+  HRESULT addJSArrayToVariantVector(LPDISPATCH aArrayDispatch, VariantVector &aVariantVector, bool aReverse = false);
   HRESULT constructSafeArrayFromVector(const VariantVector &aVariantVector, VARIANT &aSafeArray);
+  HRESULT appendVectorToSafeArray(const VariantVector &aVariantVector, VARIANT &aSafeArray);
 
   HRESULT getHTMLDocumentForHWND(HWND hwnd, IHTMLDocument2** aRet);
   HRESULT getBrowserForHTMLDocument(IHTMLDocument2* aDocument, IWebBrowser2** aRet);

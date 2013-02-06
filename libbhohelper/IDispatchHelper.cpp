@@ -1,6 +1,8 @@
 #include "StdAfx.h"
 #include "libbhohelper.h"
 
+#include <algorithm>
+
 #include <shlguid.h>
 #include <OleAcc.h> // For ObjectFromLresult
 #pragma comment(lib, "Oleacc.lib")
@@ -60,17 +62,20 @@ namespace LIB_BhoHelper
 
   //----------------------------------------------------------------------------
   //
-  HRESULT addJSArrayToVariantVector(LPDISPATCH aArrayDispatch, VariantVector &aVariantVector)
+  HRESULT addJSArrayToVariantVector(LPDISPATCH aArrayDispatch, VariantVector &aVariantVector, bool aReverse)
   {
-    CComQIPtr<IDispatchEx> dispexArray(aArrayDispatch);
-    if (!dispexArray) {
+    CComQIPtr<IDispatch> dispArray(aArrayDispatch);
+    if (!dispArray) {
         return E_NOINTERFACE;
     }
 
     // Get array length DISPID
     DISPID dispidLength;
     CComBSTR bstrLength(L"length");
-    HRESULT hr = dispexArray->GetDispID(bstrLength, fdexNameCaseSensitive, &dispidLength);
+    //HRESULT hr = dispexArray->GetDispID(bstrLength, fdexNameCaseSensitive, &dispidLength);
+    HRESULT hr = dispArray->GetIDsOfNames(IID_NULL, &bstrLength, 1, LOCALE_SYSTEM_DEFAULT, &dispidLength);
+
+
     if (FAILED(hr)) {
         return hr;
     }
@@ -78,7 +83,8 @@ namespace LIB_BhoHelper
     // Get length value using InvokeEx()
     CComVariant varLength;
     DISPPARAMS dispParamsNoArgs = {0};
-    hr = dispexArray->InvokeEx(dispidLength, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varLength, NULL, NULL);
+    //hr = dispexArray->InvokeEx(dispidLength, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varLength, NULL, NULL);
+    hr = dispArray->Invoke(dispidLength, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varLength, NULL, NULL);
     if (FAILED(hr)) {
         return hr;
     }
@@ -87,8 +93,10 @@ namespace LIB_BhoHelper
     const int count = varLength.intVal;
     aVariantVector.reserve(aVariantVector.size() + count); //ensure that we will not reallocate too often
 
+
+
     // For each element in source array:
-    for (int i = count-1; i >= 0; --i) //values are reverted
+    for (int i = 0 ; i < count; ++i) //values are reverted
     {
       CString strIndex;
       strIndex.Format(L"%d", i);
@@ -96,18 +104,23 @@ namespace LIB_BhoHelper
       // Convert to BSTR, as GetDispID() wants BSTR's
       CComBSTR bstrIndex(strIndex);
       DISPID dispidIndex;
-      hr = dispexArray->GetDispID(bstrIndex, fdexNameCaseSensitive, &dispidIndex);
+      //hr = dispexArray->GetDispID(bstrIndex, fdexNameCaseSensitive, &dispidIndex);
+      hr = dispArray->GetIDsOfNames(IID_NULL, &bstrIndex, 1, LOCALE_SYSTEM_DEFAULT, &dispidIndex);
 
       CComVariant varItem;
       //if we cannot obtain item with given index - it means that its value is undefined
       if (SUCCEEDED(hr)) {
       // Get array item value using InvokeEx()
-        hr = dispexArray->InvokeEx(dispidIndex, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varItem, NULL, NULL);
+        //hr = dispexArray->InvokeEx(dispidIndex, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varItem, NULL, NULL);
+        hr = dispArray->Invoke(dispidIndex, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &dispParamsNoArgs, &varItem, NULL, NULL);
         if (FAILED(hr)) {
           return hr;
         }
       }
       aVariantVector.push_back(varItem);
+    }
+    if (aReverse) {
+      std::reverse(aVariantVector.begin(),aVariantVector.end());
     }
     return S_OK;
   }
@@ -116,21 +129,56 @@ namespace LIB_BhoHelper
   //
   HRESULT constructSafeArrayFromVector(const VariantVector &aVariantVector, VARIANT &aSafeArray)
   {
+    HRESULT hr = VariantClear(&aSafeArray);
+    if (FAILED(hr)) {
+      return hr;
+    }
     SAFEARRAYBOUND bounds [] = { static_cast<ULONG>(aVariantVector.size()), 0 };
     aSafeArray.vt = VT_ARRAY | VT_VARIANT;
     aSafeArray.parray = SafeArrayCreate(VT_VARIANT, 1, bounds);
     VARIANT *elements;
     SafeArrayAccessData(aSafeArray.parray, (void**)&elements);
     for (size_t i = 0; i < aVariantVector.size(); ++i) {
-      HRESULT hr = ::VariantCopy(&elements[i],&aVariantVector[i]);
+      hr = ::VariantCopy(&elements[i],&aVariantVector[i]);
       if (FAILED(hr)) {
         return hr;
-      }      
+      }
     }
     SafeArrayUnaccessData(aSafeArray.parray);
     return S_OK;
   }
 
+  //----------------------------------------------------------------------------
+  //
+  HRESULT appendVectorToSafeArray(const VariantVector &aVariantVector, VARIANT &aSafeArray)
+  {
+    CComSafeArray<VARIANT> original;
+    HRESULT hr = S_OK;
+    if (aSafeArray.vt != VT_SAFEARRAY) {
+      hr = VariantClear(&aSafeArray);
+      if (FAILED(hr)) {
+        return hr;
+      }
+      hr = original.Create();
+      if (FAILED(hr)) {
+        return hr;
+      }
+    } else {
+      original.Attach(aSafeArray.parray);
+      aSafeArray.vt = VT_EMPTY;
+    }
+
+    size_t originalSize = original.GetCount();
+    original.Resize(originalSize + aVariantVector.size());
+    for (size_t i = 0; i < aVariantVector.size(); ++i) {
+      VARIANT tmp = {0};
+      VariantCopy(&tmp, &(aVariantVector[i]));
+      original.SetAt(originalSize + i, tmp);
+    }
+    CComVariant var(original.Detach());
+    var.Detach(&aSafeArray);
+    return S_OK;
+  }
 
   //----------------------------------------------------------------------------
   //
