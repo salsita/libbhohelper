@@ -43,6 +43,7 @@
 #include <atlctl.h>
 #include <atlcoll.h>
 #include <atlfile.h>
+#include <atlsafe.h>
 
 #include <shlguid.h>
 #include <shlobj.h>
