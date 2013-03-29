@@ -13,7 +13,7 @@ namespace LIB_BhoHelper
   {
     DWORD dwMsg = ::RegisterWindowMessage(L"WM_HTML_GETOBJECT");
     LRESULT lResult = 0;
-    ::SendMessageTimeout(hwnd, dwMsg, 0, 0, SMTO_ABORTIFHUNG, 1000, (DWORD*) &lResult);
+    ::SendMessageTimeout(hwnd, dwMsg, 0, 0, SMTO_ABORTIFHUNG, 1000, (DWORD_PTR*) &lResult);
     if (lResult) {
       return ::ObjectFromLresult(lResult, IID_IHTMLDocument2, 0, (void**) aRet);
     }
@@ -198,7 +198,7 @@ namespace LIB_BhoHelper
       // Now we need to get the IWebBrowser2 from the window.
       DWORD dwMsg = ::RegisterWindowMessage(L"WM_HTML_GETOBJECT");
       LRESULT lResult = 0;
-      ::SendMessageTimeout(hwnd, dwMsg, 0, 0, SMTO_ABORTIFHUNG, 1000, (DWORD*) &lResult);
+      ::SendMessageTimeout(hwnd, dwMsg, 0, 0, SMTO_ABORTIFHUNG, 1000, (DWORD_PTR*) &lResult);
       if (lResult) {
         CComPtr<IHTMLDocument2> doc;
         HRESULT hr = ::ObjectFromLresult(lResult, IID_IHTMLDocument2, 0, (void**) &doc);
