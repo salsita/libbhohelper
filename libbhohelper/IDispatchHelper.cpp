@@ -258,6 +258,12 @@ namespace LIB_BhoHelper
 		  return hr;
 	  DISPID namedArgs[] = {DISPID_PROPERTYPUT};
 	  DISPPARAMS params = {&vtValue, namedArgs, 1, 1};
+		if (vtValue.vt == VT_UNKNOWN || vtValue.vt == VT_DISPATCH || 
+			(vtValue.vt & VT_ARRAY) || (vtValue.vt & VT_BYREF)) {
+			  hr = scriptDispatch->InvokeEx(did, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYPUTREF, &params, NULL, NULL, NULL);
+			  if (SUCCEEDED(hr))
+				  return hr;
+		}
 	  return scriptDispatch->InvokeEx(did, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYPUT, &params, NULL, NULL, NULL);
   }
 
