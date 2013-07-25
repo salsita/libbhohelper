@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <map>
+#include "Mshtml.h"
 
 namespace LIB_BhoHelper
 {
