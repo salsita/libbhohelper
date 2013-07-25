@@ -2,7 +2,6 @@
 #include <vector>
 #include <map>
 
-
 namespace LIB_BhoHelper
 {
 
@@ -103,6 +102,89 @@ namespace LIB_BhoHelper
     HRESULT Call_exOnShowWindow();
     HRESULT Call_exOnHideWindow();
     BOOL Call_exOnDeactivateWindow();
+  };
+
+  ///////////////////////////////////////////////////////////
+  // DOMEventHandlerAdapter
+  // Adapter for DOM event handlers.
+  // Uses addEventListener or "on.." property of mEventTarget
+  // depending on what is available. An event added via
+  // addEventListener gets removed in remove() and destructor.
+  // When the "on.." method is used it overwrites existing
+  // handlers, even if it has already attached to this event.
+  class DOMEventHandlerAdapter
+  {
+  public:
+    DOMEventHandlerAdapter() : mCapture(VARIANT_FALSE)
+    {
+    };
+
+    ~DOMEventHandlerAdapter()
+    {
+      remove();
+    };
+
+    bool equals(IDispatch * aEventTarget, LPCOLESTR aEventName, IDispatch * aHandler, BOOL aCapture = FALSE)
+    {
+      return( mHandler == aHandler
+              && mEventTarget.IsEqualObject(aEventTarget)
+              && mEventName == aEventName
+              && mCapture == aCapture);
+    };
+
+    HRESULT addTo(IDispatch * aEventTarget, LPCOLESTR aEventName, IDispatch * aHandler, BOOL aCapture = FALSE)
+    {
+      ATLASSERT(aEventTarget);
+      ATLASSERT(aHandler);
+      if (!aEventTarget || !aHandler) {
+        return E_INVALIDARG;
+      }
+
+      if ( equals(aEventTarget, aEventName, aHandler, aCapture) && mEventTarget ) {
+        // already attached a handler for this via addEventListener, so no need to do it again
+        return S_OK;  
+      }
+
+      // In any case we add the event now. Whether it was done before using "on..." or
+      // it was not done at all. Means, if "on.." is used it will overwrite the previous
+      // handler.
+      // Clean up first
+      remove();
+
+      mEventName = aEventName;
+      mHandler = aHandler;
+      mCapture = (aCapture) ? VARIANT_TRUE : VARIANT_FALSE;
+
+      // see if we can get a IEventTarget
+      mEventTarget = aEventTarget;
+      if (mEventTarget) {
+        // yes, so use addEventListener / removeEventListener
+        return mEventTarget->addEventListener(mEventName, aHandler, mCapture);
+      }
+
+      // IEventTarget not supported, set via "on..." property
+      CIDispatchHelper eventTarget(aEventTarget);
+      ATLASSERT(eventTarget);
+      CComBSTR name(L"on");
+      name.Append(mEventName);
+      return eventTarget.SetPropertyByRef(name, CComVariant(aHandler));
+    }
+
+    void remove()
+    {
+      // if IEventTarget is supported call removeEventListener
+      if (mEventTarget) {
+        mEventTarget->removeEventListener(mEventName, mHandler, mCapture);
+        mEventTarget.Release();
+      }
+      mHandler.Release();
+    }
+
+  public:
+    CComQIPtr<IEventTarget> mEventTarget;
+    CComPtr<IDispatch> mHandler;
+    CComBSTR mEventName;
+    VARIANT_BOOL mCapture;
   };
 
   ///////////////////////////////////////////////////////////
