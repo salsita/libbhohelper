@@ -3,6 +3,110 @@
 #include <map>
 #include "Mshtml.h"
 
+// in case Win8 SDK is not installed
+#ifndef __IDOMEvent_FWD_DEFINED__
+#define __IDOMEvent_FWD_DEFINED__
+typedef interface IDOMEvent IDOMEvent;
+#endif 	/* __IDOMEvent_FWD_DEFINED__ */
+
+#ifndef __IEventTarget_FWD_DEFINED__
+#define __IEventTarget_FWD_DEFINED__
+typedef interface IEventTarget IEventTarget;
+#endif 	/* __IEventTarget_FWD_DEFINED__ */
+
+#ifndef __IEventTarget_INTERFACE_DEFINED__
+#define __IEventTarget_INTERFACE_DEFINED__
+/* interface IEventTarget */
+/* [object][uuid][dual][oleautomation] */ 
+
+    DEFINE_GUID(IID_IEventTarget, 
+        0x305104b9, 0x98b5, 0x11cf, 0xbb, 0x82, 0x00, 0xaa, 0x00, 0xbd, 0xce, 0x0b);
+
+    MIDL_INTERFACE("305104b9-98b5-11cf-bb82-00aa00bdce0b")
+    IEventTarget : public IDispatch
+    {
+    public:
+        virtual /* [id] */ HRESULT STDMETHODCALLTYPE addEventListener( 
+            /* [in] */ __RPC__in BSTR type,
+            /* [in] */ __RPC__in_opt IDispatch *listener,
+            /* [in] */ VARIANT_BOOL useCapture) = 0;
+        
+        virtual /* [id] */ HRESULT STDMETHODCALLTYPE removeEventListener( 
+            /* [in] */ __RPC__in BSTR type,
+            /* [in] */ __RPC__in_opt IDispatch *listener,
+            /* [in] */ VARIANT_BOOL useCapture) = 0;
+        
+        virtual /* [id] */ HRESULT STDMETHODCALLTYPE dispatchEvent( 
+            /* [in] */ __RPC__in_opt IDOMEvent *evt,
+            /* [out][retval] */ __RPC__out VARIANT_BOOL *pfResult) = 0;
+        
+    };
+#endif 	/* __IEventTarget_INTERFACE_DEFINED__ */
+
+#ifndef __IDOMEvent_INTERFACE_DEFINED__
+#define __IDOMEvent_INTERFACE_DEFINED__
+/* interface IDOMEvent */
+/* [object][uuid][dual][oleautomation] */ 
+
+    DEFINE_GUID(IID_IDOMEvent, 
+        0x305104ba, 0x98b5, 0x11cf, 0xbb, 0x82, 0x00, 0xaa, 0x00, 0xbd, 0xce, 0x0b);
+
+    MIDL_INTERFACE("305104ba-98b5-11cf-bb82-00aa00bdce0b")
+    IDOMEvent : public IDispatch
+    {
+    public:
+        virtual /* [id][propget] */ HRESULT STDMETHODCALLTYPE get_bubbles( 
+            /* [out][retval] */ __RPC__out VARIANT_BOOL *p) = 0;
+        
+        virtual /* [id][propget] */ HRESULT STDMETHODCALLTYPE get_cancelable( 
+            /* [out][retval] */ __RPC__out VARIANT_BOOL *p) = 0;
+        
+        virtual /* [id][propget] */ HRESULT STDMETHODCALLTYPE get_currentTarget( 
+            /* [out][retval] */ __RPC__deref_out_opt IEventTarget **p) = 0;
+        
+        virtual /* [id][propget] */ HRESULT STDMETHODCALLTYPE get_defaultPrevented( 
+            /* [out][retval] */ __RPC__out VARIANT_BOOL *p) = 0;
+        
+        virtual /* [id][propget] */ HRESULT STDMETHODCALLTYPE get_eventPhase( 
+            /* [out][retval] */ __RPC__out USHORT *p) = 0;
+        
+        virtual /* [id][propget] */ HRESULT STDMETHODCALLTYPE get_target( 
+            /* [out][retval] */ __RPC__deref_out_opt IEventTarget **p) = 0;
+        
+        virtual /* [id][propget] */ HRESULT STDMETHODCALLTYPE get_timeStamp( 
+            /* [out][retval] */ __RPC__out ULONGLONG *p) = 0;
+        
+        virtual /* [id][propget] */ HRESULT STDMETHODCALLTYPE get_type( 
+            /* [out][retval] */ __RPC__deref_out_opt BSTR *p) = 0;
+        
+        virtual /* [id] */ HRESULT STDMETHODCALLTYPE initEvent( 
+            /* [in] */ __RPC__in BSTR eventType,
+            /* [in] */ VARIANT_BOOL canBubble,
+            /* [in] */ VARIANT_BOOL cancelable) = 0;
+        
+        virtual /* [id] */ HRESULT STDMETHODCALLTYPE preventDefault( void) = 0;
+        
+        virtual /* [id] */ HRESULT STDMETHODCALLTYPE stopPropagation( void) = 0;
+        
+        virtual /* [id] */ HRESULT STDMETHODCALLTYPE stopImmediatePropagation( void) = 0;
+        
+        virtual /* [id][propget] */ HRESULT STDMETHODCALLTYPE get_isTrusted( 
+            /* [out][retval] */ __RPC__out VARIANT_BOOL *p) = 0;
+        
+        virtual /* [id][propput] */ HRESULT STDMETHODCALLTYPE put_cancelBubble( 
+            /* [in] */ VARIANT_BOOL v) = 0;
+        
+        virtual /* [id][propget] */ HRESULT STDMETHODCALLTYPE get_cancelBubble( 
+            /* [out][retval] */ __RPC__out VARIANT_BOOL *p) = 0;
+        
+        virtual /* [id][propget] */ HRESULT STDMETHODCALLTYPE get_srcElement( 
+            /* [out][retval] */ __RPC__deref_out_opt IHTMLElement **p) = 0;
+        
+    };
+#endif 	/* __IDOMEvent_INTERFACE_DEFINED__ */
+
+
+
 namespace LIB_BhoHelper
 {
 
