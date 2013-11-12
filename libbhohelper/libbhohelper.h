@@ -293,66 +293,67 @@ namespace LIB_BhoHelper
   };
 
   ///////////////////////////////////////////////////////////
-  // CUri
-  // template class for URI implentations
-  template<class T> class CUri
+  // ComLibrary
+  // Allows in-proc server loading without the server being
+  // registered.
+  // It basically wraps DllGetClassObject(),
+  // IClassFactory::CreateInstance() and DllCanUnloadNow().
+  //
+  // Usage:
+  // Put a member somwhere:
+  //   ComLibrary mMyLib;
+  // Before you want to use it call:
+  //   HRESULT hr = mMyLib.load(L"MyLib.dll");
+  // And when you finished:
+  //   mMyLib.unload();
+  // If you use the library from within another library it's
+  // probably a good idea to modify your DllCanUnloadNow()
+  // and check there also your mMyLib.
+  class ComLibrary
   {
-  public:
-    CString m_sProtocol;
-    CString m_sServer;
-    CString m_sPath;
+  // -------------------------------------------------------------------------
+  public: // members
+    ComLibrary();
+    virtual ~ComLibrary();
 
-    void Empty()
+    HRESULT load(LPOLESTR szDllName, HINSTANCE aHinstanceRel = NULL);
+    HRESULT unload(BOOL bForce = FALSE);
+
+    // these two wrap the functions exported from the COM module
+    HRESULT DllGetClassObject(REFCLSID aClsid, 
+      REFIID aIid, LPVOID FAR* ppv);
+    HRESULT DllCanUnloadNow();
+
+    // wraps DllGetClassObject and IClassFactory::CreateInstance
+    template<class Iface> HRESULT createInstance(
+        REFCLSID aClsid,
+        Iface** aRetPtrPtr,
+        IUnknown* aUnknownOuter = NULL)
     {
-      __if_exists (T::InternalEmpty)
-      {
-        T* pT = static_cast<T*>(this);
-        pT->InternalEmpty();
-      }
-      m_sProtocol.Empty();
-      m_sServer.Empty();
-      m_sPath.Empty();
+      if (!mDllGetClassObject)
+        { return E_UNEXPECTED; } // missing DllGetClassObject
+
+      // get class factory
+      CComPtr<IClassFactory> classFactory;
+      HRESULT hr = this->DllGetClassObject(aClsid, IID_IClassFactory, (LPVOID*)&classFactory.p);
+      if (FAILED(hr))
+        { return hr; }
+      return classFactory->CreateInstance(aUnknownOuter, __uuidof(Iface), (void**)aRetPtrPtr);
     }
 
-    HRESULT Parse(LPCTSTR lpsURI)
-    {
-      Empty();
-      __if_exists (T::InternalParse)
-      {
-        T* pT = static_cast<T*>(this);
-        return pT->InternalParse(lpsURI);
-      }
+  private:
+    // type for DllGetClassObject
+    typedef HRESULT (__stdcall *FnDllGetClassObject)(IN REFCLSID rclsid, 
+      IN REFIID riid, OUT LPVOID FAR* ppv);
+    // type for DllCanUnloadNow
+    typedef HRESULT (__stdcall *FnDllCanUnloadNow)(void);
 
-      // get protocol
-      m_sProtocol = lpsURI;
-      int i = m_sProtocol.Find(_T("://"));
-      if (i < 0)
-        return E_FAIL;
-
-      m_sServer = m_sProtocol.Mid(i+3);       // get server
-      m_sProtocol.ReleaseBufferSetLength(i);  // truncate protocol
-
-      i = m_sServer.Find(_T("/"));
-      if (i > 0)
-      {
-        m_sPath = m_sServer.Mid(i);           // get path
-        m_sServer.ReleaseBufferSetLength(i);  // truncate server
-      }
-
-      return S_OK;
-    }
-
-    CString Get()
-    {
-      __if_exists (T::InternalGet)
-      {
-        T* pT = static_cast<T*>(this);
-        return pT->InternalGet(lpsURI);
-      }
-      CString sRet;
-      sRet.Format(_T("%s://%s%s"), m_sProtocol, m_sServer, m_sPath);
-      return sRet;
-    }
+    // module handle
+    HMODULE mhDll;
+    // DllGetClassObject
+    FnDllGetClassObject mDllGetClassObject;
+    // DllCanUnloadNow
+    FnDllCanUnloadNow   mDllCanUnloadNow;
   };
 
 }// namespace LIB_BhoHelper
