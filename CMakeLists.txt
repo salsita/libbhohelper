@@ -18,6 +18,7 @@ set(${PROJECT_NAME}_HEADERS
 set(${PROJECT_NAME}_SOURCES
   "${${PROJECT_NAME}_SRC_DIR}/AtlFnInfos.cpp"
   "${${PROJECT_NAME}_SRC_DIR}/IDispatchHelper.cpp"
+  "${${PROJECT_NAME}_SRC_DIR}/ComLibrary.cpp"
   "${${PROJECT_NAME}_SRC_DIR}/stdafx.cpp"
   #  "${${PROJECT_NAME}_SRC_DIR}/uri.cpp"
   )
