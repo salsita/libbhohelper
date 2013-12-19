@@ -430,7 +430,7 @@ namespace LIB_BhoHelper
   // Allows (partial) impementation of dispinterfaces
   // (non-dual IDispatch interfaces).
   // Basically this class does the same like IDispEventImpl.
-  // The methods implmemented here are mainly copies of 
+  // The methods implemented here are mainly copies of 
   // IDispEventImpl methods - IDispEventImpl is able to handle
   // partial implementations of dispinterface based interfaces.
   // IDispEventImpl though allows only methods, no properties.
@@ -460,8 +460,7 @@ namespace LIB_BhoHelper
       }
 		  const LIB_BhoHelper::DISPATCH_CALL_ENTRY<T>* pMap = T::_GetFuncMap();
 		  const LIB_BhoHelper::DISPATCH_CALL_ENTRY<T>* pFound = NULL;
-		  while (pMap->piid != NULL)
-		  {
+		  while (pMap->piid != NULL) {
 			  if ((pMap->nControlID == nID) &&
             (pMap->dispid == dispidMember) && 
 				    (IsEqualIID(*(pMap->piid), *piid)) &&
@@ -505,8 +504,7 @@ namespace LIB_BhoHelper
 		  // #define _ATL_MAX_VARTYPES nnnn
 		  // before including atlcom.h
 		  ATLASSERT(info.nParams <= _ATL_MAX_VARTYPES);
-		  if (info.nParams > _ATL_MAX_VARTYPES)
-		  {
+		  if (info.nParams > _ATL_MAX_VARTYPES) {
 			  return E_FAIL;
 		  }
 		  VARIANTARG* rgVarArgs[_ATL_MAX_VARTYPES];
@@ -515,19 +513,16 @@ namespace LIB_BhoHelper
 		  UINT nIndex = 0;
 
 #ifndef _ATL_IGNORE_NAMED_ARGS
-		  for (nIndex; nIndex < pdispparams->cNamedArgs; nIndex++)
-		  {
+		  for (nIndex; nIndex < pdispparams->cNamedArgs; nIndex++) {
 			  ATLASSERT( ( NULL != pVarArgs ) && ( pdispparams->rgdispidNamedArgs[nIndex] < _countof(rgVarArgs) ) );
-			  if( ( NULL == pVarArgs ) || ( pdispparams->rgdispidNamedArgs[nIndex] >= _countof(rgVarArgs) ) )
-			  {
+			  if( ( NULL == pVarArgs ) || ( pdispparams->rgdispidNamedArgs[nIndex] >= _countof(rgVarArgs) ) ) {
 				  return E_FAIL;
 			  }
 			  pVarArgs[pdispparams->rgdispidNamedArgs[nIndex]] = &pdispparams->rgvarg[nIndex];
 		  }
 #endif
 
-		  for (; nIndex < pdispparams->cArgs; nIndex++)
-		  {
+		  for (; nIndex < pdispparams->cArgs; nIndex++) {
 			  ATLASSERT( NULL != pVarArgs );
 			  if( NULL == pVarArgs )
 			  {
@@ -566,8 +561,9 @@ namespace LIB_BhoHelper
 	  {
 		  CComPtr<ITypeInfo> spTypeInfo;
       HRESULT hr = _tih.GetTI(lcid, &spTypeInfo);
-		  if (FAILED(hr))
+      if (FAILED(hr)) {
 			  return hr;
+      }
 		  return ::LIB_BhoHelper::GetFuncInfoFromId(spTypeInfo, iid, dispidMember, aInvokeKind, lcid, info);
 	  }
   };

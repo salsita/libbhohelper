@@ -45,7 +45,7 @@ namespace LIB_BhoHelper
     }
     pTypeInfo->ReleaseTypeAttr(pAttr);
     if (pFuncDesc == NULL) {
-      return E_FAIL;
+      return DISP_E_MEMBERNOTFOUND;
     }
 
     // If this assert occurs, then add a #define _ATL_MAX_VARTYPES nnnn
@@ -53,7 +53,7 @@ namespace LIB_BhoHelper
     ATLASSERT(pFuncDesc->cParams <= _ATL_MAX_VARTYPES);
     if (pFuncDesc->cParams > _ATL_MAX_VARTYPES) {
       pTypeInfo->ReleaseFuncDesc(pFuncDesc);
-      return E_FAIL;
+      return E_UNEXPECTED;
     }
 
     for (i = 0; i < pFuncDesc->cParams; i++) {
