@@ -356,4 +356,216 @@ namespace LIB_BhoHelper
     FnDllCanUnloadNow   mDllCanUnloadNow;
   };
 
+  // -------------------------------------------------------------------------
+  // GetFuncInfoFromId
+  // This is a modified copy of ALT::AtlGetFuncInfoFromId(..).
+  // It allows also to get a function info for every INVOKEKIND, means,
+  // also for PROPGET, PROPPUT etc.
+  HRESULT GetFuncInfoFromId(
+	  _In_ ITypeInfo* pTypeInfo, 
+	  _In_ const IID& /*iid*/, 
+	  _In_ DISPID dispidMember, 
+    _In_ INVOKEKIND aInvokeKind,
+	  _In_ LCID /*lcid*/, 
+	  _Inout_ _ATL_FUNC_INFO& info);
+
+  // DISPATCH_CALL_ENTRY
+  // Copy of _ATL_EVENT_ENTRY with an additional INVOKEKIND member.
+  // Used by the DISPCALL-map macros.
+  template <class T>
+    struct DISPATCH_CALL_ENTRY
+  {
+	  UINT nControlID;			//ID identifying object instance
+	  const IID* piid;			//dispinterface IID
+	  int nOffset;				  //offset of dispinterface from this pointer
+	  DISPID dispid;				//DISPID of method/property
+    INVOKEKIND invokeKind;
+	  void (__stdcall T::*pfn)();	//method to invoke
+	  _ATL_FUNC_INFO* pInfo;
+  };
+
+  // These macros work similar like the sink map macros (e.g. BEGIN_SINK_MAP(..) ).
+  // The difference is, that it is possible to handle also PROPERTY_GET and
+  // PROPERTY_PUT(REF) calls also.
+#define BEGIN_DISPCALL_MAP(_class)\
+	typedef _class _GetFuncMapFinder;\
+	static const LIB_BhoHelper::DISPATCH_CALL_ENTRY<_class>* _GetFuncMap()\
+	{\
+		PTM_WARNING_DISABLE \
+		typedef _class _disp_classtype;\
+		static const LIB_BhoHelper::DISPATCH_CALL_ENTRY<_class> map[] = {
+
+#define DISPCALL_MAP_ENTRY(id, iid, dispid, invokeKind, fn) \
+  {id, &iid, (int)(INT_PTR)((_disp_classtype*)8)-8, dispid, invokeKind, (void (__stdcall _disp_classtype::*)())fn, NULL},
+
+#define METHOD_ENTRY(id, iid, dispid, fn) \
+  DISPCALL_MAP_ENTRY(id, iid, dispid, INVOKE_FUNC, fn)
+
+#define PROPGET_ENTRY(id, iid, dispid, fn) \
+  DISPCALL_MAP_ENTRY(id, iid, dispid, INVOKE_PROPERTYGET, fn)
+
+#define PROPPUT_ENTRY(id, iid, dispid, fn) \
+  DISPCALL_MAP_ENTRY(id, iid, dispid, INVOKE_PROPERTYPUT, fn)
+
+#define PROPPUTREF_ENTRY(id, iid, dispid, fn) \
+  DISPCALL_MAP_ENTRY(id, iid, dispid, INVOKE_PROPERTYPUTREF, fn)
+
+#define PROPERTY_ENTRY(id, iid, dispid, fnGet, fnPut) \
+  DISPCALL_MAP_ENTRY(id, iid, dispid, INVOKE_PROPERTYGET, fnGet) \
+  DISPCALL_MAP_ENTRY(id, iid, dispid, INVOKE_PROPERTYPUT, fnPut)
+
+#define PROPERTY_ENTRYREF(id, iid, dispid, fnGet, fnPut) \
+  DISPCALL_MAP_ENTRY(id, iid, dispid, INVOKE_PROPERTYGET, fnGet) \
+  DISPCALL_MAP_ENTRY(id, iid, dispid, INVOKE_PROPERTYPUTREF, fnPut)
+
+#define END_DISPCALL_MAP() \
+	  {0, NULL, 0, 0, INVOKE_FUNC, NULL, NULL} }; \
+    return map;\
+	  PTM_WARNING_RESTORE \
+	}
+
+  ///////////////////////////////////////////////////////////
+  // template class DispinterfaceImpl
+  // Derives from IDispatchImpl.
+  // Allows (partial) impementation of dispinterfaces
+  // (non-dual IDispatch interfaces).
+  // Basically this class does the same like IDispEventImpl.
+  // The methods implemented here are mainly copies of 
+  // IDispEventImpl methods - IDispEventImpl is able to handle
+  // partial implementations of dispinterface based interfaces.
+  // IDispEventImpl though allows only methods, no properties.
+  template <UINT nID, class T, class Tif, const IID* piid = &__uuidof(Tif),
+      const GUID* plibid = &CAtlModule::m_libid, WORD wMajor = 1,
+      WORD wMinor = 0, class tihclass = CComTypeInfoHolder>
+        class ATL_NO_VTABLE DispinterfaceImpl :
+          public IDispatchImpl<Tif, piid, plibid, wMajor, wMinor, tihclass>
+  {
+  public:
+	  STDMETHOD(Invoke)(
+		  _In_ DISPID dispidMember, 
+		  _In_ REFIID /*riid*/,
+		  _In_ LCID lcid, 
+		  _In_ WORD wFlags, 
+		  _In_ DISPPARAMS* pdispparams, 
+		  _Out_opt_ VARIANT* pvarResult,
+		  _In_opt_ EXCEPINFO* /*pexcepinfo*/, 
+		  _In_opt_ UINT* /*puArgErr*/)
+	  {
+      INVOKEKIND aInvokeKind = INVOKE_FUNC;
+      if (wFlags & DISPATCH_PROPERTYGET) {
+        aInvokeKind = INVOKE_PROPERTYGET;
+      }
+      else if (wFlags & DISPATCH_PROPERTYPUT) {
+        aInvokeKind = INVOKE_PROPERTYPUT;
+      }
+		  const LIB_BhoHelper::DISPATCH_CALL_ENTRY<T>* pMap = T::_GetFuncMap();
+		  const LIB_BhoHelper::DISPATCH_CALL_ENTRY<T>* pFound = NULL;
+		  while (pMap->piid != NULL) {
+			  if ((pMap->nControlID == nID) &&
+            (pMap->dispid == dispidMember) && 
+				    (IsEqualIID(*(pMap->piid), *piid)) &&
+            (pMap->invokeKind == aInvokeKind))
+			  {
+				  pFound = pMap;
+				  break;
+			  }
+			  pMap++;
+		  }
+      if (pFound == NULL) {
+			  return S_OK;
+      }
+
+		  _ATL_FUNC_INFO info;
+		  _ATL_FUNC_INFO* pInfo;
+      if (pFound->pInfo != NULL) {
+			  pInfo = pFound->pInfo;
+      }
+		  else {
+			  pInfo = &info;
+			  HRESULT hr = GetFuncInfoFromId(*piid, dispidMember, aInvokeKind, lcid, info);
+			  if (FAILED(hr))
+				  return S_OK;
+		  }
+		  return InvokeFromFuncInfo(pFound->pfn, *pInfo, pdispparams, pvarResult);
+	  }
+
+	  //Helper for invoking the event
+	  HRESULT InvokeFromFuncInfo(
+		  /* _In_ */ void (__stdcall T::*pEvent)(), 
+		  _In_ _ATL_FUNC_INFO& info, 
+		  _In_ DISPPARAMS* pdispparams, 
+		  _Out_opt_ VARIANT* pvarResult)
+	  {
+		  ATLASSERT(pdispparams->cArgs == (UINT)info.nParams);
+
+		  T* pT = static_cast<T*>(this);
+
+		  // If this assert occurs, then add 
+		  // #define _ATL_MAX_VARTYPES nnnn
+		  // before including atlcom.h
+		  ATLASSERT(info.nParams <= _ATL_MAX_VARTYPES);
+		  if (info.nParams > _ATL_MAX_VARTYPES) {
+			  return E_FAIL;
+		  }
+		  VARIANTARG* rgVarArgs[_ATL_MAX_VARTYPES];
+		  VARIANTARG** pVarArgs = info.nParams ? rgVarArgs : 0;
+
+		  UINT nIndex = 0;
+
+#ifndef _ATL_IGNORE_NAMED_ARGS
+		  for (nIndex; nIndex < pdispparams->cNamedArgs; nIndex++) {
+			  ATLASSERT( ( NULL != pVarArgs ) && ( pdispparams->rgdispidNamedArgs[nIndex] < _countof(rgVarArgs) ) );
+			  if( ( NULL == pVarArgs ) || ( pdispparams->rgdispidNamedArgs[nIndex] >= _countof(rgVarArgs) ) ) {
+				  return E_FAIL;
+			  }
+			  pVarArgs[pdispparams->rgdispidNamedArgs[nIndex]] = &pdispparams->rgvarg[nIndex];
+		  }
+#endif
+
+		  for (; nIndex < pdispparams->cArgs; nIndex++) {
+			  ATLASSERT( NULL != pVarArgs );
+			  if( NULL == pVarArgs )
+			  {
+				  return E_FAIL;
+			  }
+			  pVarArgs[info.nParams-nIndex-1] = &pdispparams->rgvarg[nIndex];
+		  }
+
+		  CComStdCallThunk<T> thunk;
+		  thunk.Init(pEvent, pT);
+
+		  CComVariant tmpResult;
+		  if (pvarResult == NULL)
+			  pvarResult = &tmpResult;
+
+		  HRESULT hr = DispCallFunc(
+			  &thunk,
+			  0,
+			  info.cc,
+			  info.vtReturn,
+			  info.nParams,
+			  info.pVarTypes,
+			  pVarArgs,
+			  pvarResult);
+		  ATLASSERT(SUCCEEDED(hr));
+		  return hr;
+	  }
+
+	  //Helper for finding the function index for a DISPID
+	  HRESULT GetFuncInfoFromId(
+		  _In_ const IID& iid, 
+		  _In_ DISPID dispidMember, 
+      _In_ INVOKEKIND aInvokeKind,
+		  _In_ LCID lcid, 
+		  _Inout_ _ATL_FUNC_INFO& info)
+	  {
+		  CComPtr<ITypeInfo> spTypeInfo;
+      HRESULT hr = _tih.GetTI(lcid, &spTypeInfo);
+      if (FAILED(hr)) {
+			  return hr;
+      }
+		  return ::LIB_BhoHelper::GetFuncInfoFromId(spTypeInfo, iid, dispidMember, aInvokeKind, lcid, info);
+	  }
+  };
+
 }// namespace LIB_BhoHelper
