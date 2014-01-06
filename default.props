@@ -3,11 +3,11 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
     <BuildFolder>$(SolutionDir)deploy\</BuildFolder>
-    <WTLIncludeFolder>U:\Program Files\WTL81\Include</WTLIncludeFolder>
+    <WTLIncludeFolder>C:\Program Files\WTL\Include</WTLIncludeFolder>
     <GTestIncludeFolder>$(VisualStudioDir)\Projects\gtest\include</GTestIncludeFolder>
-    <GTest32LibFolder>$(VisualStudioDir)\Projects\gtest\lib\$(Configuration)_$(PlatformName)</GTest32LibFolder>
+    <GTestLibFolder>$(VisualStudioDir)\Projects\gtest\lib\$(Configuration)_$(PlatformName)</GTestLibFolder>
     <GMockIncludeFolder>$(VisualStudioDir)\Projects\gtest\include</GMockIncludeFolder>
-    <GMock32LibFolder>$(GTest32LibFolder)</GMock32LibFolder>
+    <GMockLibFolder>$(GTestLibFolder)</GMockLibFolder>
   </PropertyGroup>
   <PropertyGroup>
     <OutDir>$(BuildFolder)$(Configuration)_$(PlatformName)\</OutDir>
@@ -18,7 +18,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
-      <AdditionalLibraryDirectories>$(GTest32LibFolder);$(GMock32LibFolder);$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(GTestLibFolder);$(GMockLibFolder);$(OutDir)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -31,14 +31,14 @@
     <BuildMacro Include="GTestIncludeFolder">
       <Value>$(GTestIncludeFolder)</Value>
     </BuildMacro>
-    <BuildMacro Include="GTest32LibFolder">
-      <Value>$(GTest32LibFolder)</Value>
+    <BuildMacro Include="GTestLibFolder">
+      <Value>$(GTestLibFolder)</Value>
     </BuildMacro>
     <BuildMacro Include="GMockIncludeFolder">
       <Value>$(GMockIncludeFolder)</Value>
     </BuildMacro>
-    <BuildMacro Include="GMock32LibFolder">
-      <Value>$(GMock32LibFolder)</Value>
+    <BuildMacro Include="GMockLibFolder">
+      <Value>$(GMockLibFolder)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>
