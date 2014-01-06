@@ -138,6 +138,9 @@ namespace LIB_BhoHelper
   HRESULT removeUrlFragment(BSTR aUrl, BSTR* aRet);
   BOOL CALLBACK EnumBrowserWindows(HWND hwnd, LPARAM lParam);
 
+  // make a fully qualified URL from a path-only URL based on a IHTMLWindow
+  HRESULT makeFQURI(/*in, out*/ VARIANT & aURI, IUnknown * aWindow);
+
   ///////////////////////////////////////////////////////////
   // CIDispatchHelper
   // makes IDispatch handling easier

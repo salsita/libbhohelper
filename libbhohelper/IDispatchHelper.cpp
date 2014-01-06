@@ -241,6 +241,56 @@ namespace LIB_BhoHelper
     return TRUE;
   }
 
+  //----------------------------------------------------------------------------
+  // makeFQURI
+  // This function modifies aURI only when everything succeeds. It is safe
+  // to ignore the return value.
+  HRESULT makeFQURI(/*in, out*/ VARIANT & aURI, IUnknown * aWindow)
+  {
+    if (!aWindow || (VT_BSTR != aURI.vt) || (S_OK == IsValidURL(NULL, aURI.bstrVal, 0)) ) {
+      // have no window OR
+      // aURI is not a string OR
+      // aURI is a valid, fully qualified URL
+      return E_INVALIDARG;
+    }
+
+    // get current URL from window
+    CComQIPtr<IHTMLWindow2> window(aWindow);
+    if (!window) {
+      return E_NOINTERFACE;
+    }
+    CComPtr<IHTMLLocation> location;
+    HRESULT hr = window->get_location(&location);
+    if (!location) {
+      return (FAILED(hr)) ? hr : E_FAIL;
+    }
+    CComBSTR windowURL;
+    hr = location->get_href(&windowURL);
+    if (FAILED(hr)) {
+      return hr;
+    }
+
+    // CoInternetCombineUrl windowURL and aURI
+    CStringW fullURI;
+    DWORD bufferLength = 4096;
+    hr = CoInternetCombineUrl(windowURL, aURI.bstrVal, 0, fullURI.GetBuffer(bufferLength), bufferLength, &bufferLength, 0);
+    if (E_POINTER == hr) {
+      // buffer too small, do again
+      fullURI.ReleaseBuffer();
+      hr = CoInternetCombineUrl(windowURL, aURI.bstrVal, 0, fullURI.GetBuffer(bufferLength), bufferLength, &bufferLength, 0);
+    }
+    if (FAILED(hr)) {
+      return hr;
+    }
+
+    // save back to aURI
+    fullURI.ReleaseBuffer(bufferLength);
+    VariantClear(&aURI);
+    aURI.vt = VT_BSTR;
+    aURI.bstrVal = fullURI.AllocSysString();
+    return S_OK;
+  }
+
   ///////////////////////////////////////////////////////////
   // CIDispatchHelper
   // Put a property
