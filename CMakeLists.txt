@@ -12,6 +12,7 @@ include_directories("${${PROJECT_NAME}_INC_DIR}")
 
 set(${PROJECT_NAME}_HEADERS
   "${${PROJECT_NAME}_INC_DIR}/libbhohelper.h"
+  "${${PROJECT_NAME}_INC_DIR}/IDispatchExImpl.h"
   "${${PROJECT_NAME}_INC_DIR}/stdafx.h"
   )
 
