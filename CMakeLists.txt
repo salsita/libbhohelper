@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.8)
 project (libbhohelper)
 
-set(CMAKE_CONFIGURATION_TYPES Debug Release )
+set(CMAKE_CONFIGURATION_TYPES Debug Release RelWithDebInfo )
 set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}" CACHE STRING "Reset the configurations to those we need" FORCE)
 
 #Variables describing project layout
