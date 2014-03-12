@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 #include <map>
+#include <functional>
+#include <Ctxtcall.h>
 #include "Mshtml.h"
 
 // in case Win8 SDK is not installed
@@ -570,5 +572,84 @@ namespace LIB_BhoHelper
 		  return ::LIB_BhoHelper::GetFuncInfoFromId(spTypeInfo, iid, dispidMember, aInvokeKind, lcid, info);
 	  }
   };
+
+  ///////////////////////////////////////////////////////////
+  // class ApartmentContext
+  //  Allows execution of calls in a certain apartment.
+  //  Derive your class from ApartmentContext to get a call context
+  //  and call CallApartment with a TCallbackFunction to be called
+  //  in the stored context.
+  class ApartmentContext
+  {
+  private:
+    // the function type to use
+    typedef std::function<HRESULT ()> TCallbackFunction;
+
+    //------------------------------------------------------------------------
+    // struct CallData
+    //  used in IContextCallback::ContextCallback
+    struct CallData : public ComCallData
+    {
+      // CTOR
+      CallData(ApartmentContext & aApartmentContext, TCallbackFunction & aFunction) :
+        mApartmentContext(aApartmentContext), mFunction(aFunction)
+      {
+        dwDispid = 0;
+        dwReserved = 0;
+        pUserDefined = NULL;
+      }
+
+      HRESULT operator ()()
+      {
+        return mFunction();
+      }
+
+      ApartmentContext & mApartmentContext;
+      TCallbackFunction & mFunction;
+    };
+    //------------------------------------------------------------------------
+
+    // the static function to be called from the target context
+    static HRESULT _stdcall ContextCallFn(ComCallData *pParam)
+    {
+      return (pParam) 
+        ? (*static_cast<CallData*>(pParam)) ()
+        : E_INVALIDARG;
+    }
+
+  public:
+    // CTOR
+    ApartmentContext()
+    {
+      HRESULT hr = ::CoGetObjectContext(IID_IContextCallback, (void**)&mContextCallback.p);
+      ATLASSERT(SUCCEEDED(hr));
+    }
+
+    // call into target apartment
+    HRESULT CallApartment(TCallbackFunction aFunction)
+    {
+      ATLASSERT(mContextCallback);
+      if (!mContextCallback) {
+        return E_UNEXPECTED;
+      }
+      CallData callData(*this, aFunction);
+      return mContextCallback->ContextCallback(&ContextCallFn, &callData, IID_NULL, 0, NULL);
+    }
+
+    // are we in the target context?
+    bool IsTargetContext()
+    {
+      CComPtr<IContextCallback> contextCallback;
+      if (SUCCEEDED(::CoGetObjectContext(IID_IContextCallback, (void**)&contextCallback.p))) {
+        return contextCallback.IsEqualObject(mContextCallback);
+      }
+      // CoGetObjectContext failed: If we also have no context return true
+      return (mContextCallback == NULL);
+    }
+
+  private:
+    CComPtr<IContextCallback> mContextCallback;
+  };
+
 
 }// namespace LIB_BhoHelper
