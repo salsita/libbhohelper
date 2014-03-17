@@ -591,8 +591,8 @@ namespace LIB_BhoHelper
     struct CallData : public ComCallData
     {
       // CTOR
-      CallData(ApartmentContext & aApartmentContext, TCallbackFunction & aFunction) :
-        mApartmentContext(aApartmentContext), mFunction(aFunction)
+      CallData(TCallbackFunction & aFunction) :
+        mFunction(aFunction)
       {
         dwDispid = 0;
         dwReserved = 0;
@@ -604,7 +604,6 @@ namespace LIB_BhoHelper
         return mFunction();
       }
 
-      ApartmentContext & mApartmentContext;
       TCallbackFunction & mFunction;
     };
     //------------------------------------------------------------------------
@@ -632,7 +631,7 @@ namespace LIB_BhoHelper
       if (!mContextCallback) {
         return E_UNEXPECTED;
       }
-      CallData callData(*this, aFunction);
+      CallData callData(aFunction);
       return mContextCallback->ContextCallback(&ContextCallFn, &callData, IID_NULL, 0, NULL);
     }
 
