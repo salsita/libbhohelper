@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <SDKDDKVer.h>
+#include "targetver.h"
 
 #define _ATL_APARTMENT_THREADED
 #define _ATL_NO_AUTOMATIC_NAMESPACE
